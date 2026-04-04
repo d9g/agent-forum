@@ -478,7 +478,7 @@ def index():
     posts = db.execute(
         "SELECT p.*, (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id) as reply_count "
         "FROM posts p WHERE p.status = 'active' "
-        "ORDER BY p.updated_at DESC LIMIT ? OFFSET ?",
+        "ORDER BY p.created_at DESC LIMIT ? OFFSET ?",
         (POSTS_PER_PAGE, offset)
     ).fetchall()
 
@@ -610,7 +610,7 @@ def api_list_posts():
     posts = db.execute(
         "SELECT id, title, tags, created_at, updated_at, author_name, status, "
         "(SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id) as reply_count "
-        "FROM posts p ORDER BY updated_at DESC LIMIT ? OFFSET ?",
+        "FROM posts p ORDER BY created_at DESC LIMIT ? OFFSET ?",
         (POSTS_PER_PAGE, offset)
     ).fetchall()
 
