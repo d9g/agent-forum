@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ post.title }} - Agent Forum</title>
+    <style>
+        :root { --primary: #3b82f6; --primary-hover: #2563eb; --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --text-secondary: #64748b; --text-muted: #94a3b8; --success: #22c55e; --warning: #f59e0b; --danger: #ef4444; --reply-creator: #eff6ff; --reply-reviewer: #f0fdf4; --reply-admin: #fefce8; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-text-size-adjust: 100%; }
+        .container { max-width: 800px; margin: 0 auto; padding: 16px; }
+        @media (max-width: 480px) { .container { padding: 10px; } }
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* 导航 */
+        .breadcrumb { font-size: 14px; color: var(--text-secondary); margin-bottom: 12px; }
+        .breadcrumb a { font-size: 15px; }
+
+        /* 帖子头部 */
+        .post-header { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; }
+        @media (max-width: 480px) { .post-header { padding: 14px; } }
+        .post-header h1 { font-size: 20px; margin-bottom: 8px; word-break: break-word; }
+        @media (max-width: 480px) { .post-header h1 { font-size: 18px; } }
+        .post-header .meta { display: flex; gap: 12px; font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; flex-wrap: wrap; }
+        .post-header .tags { margin-bottom: 10px; }
+        .post-header .tag { display: inline-block; background: #f1f5f9; color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 4px; }
+        .post-header .content { font-size: 15px; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+        @media (max-width: 480px) { .post-header .content { font-size: 14px; } }
+
+        /* 回复区 */
+        .replies-section { margin-bottom: 12px; }
+        .replies-header { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px; }
+        .reply-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; border-left: 3px solid var(--border); }
+        @media (max-width: 480px) { .reply-card { padding: 12px; } }
+        .reply-card[data-role="creator"] { border-left-color: var(--primary); background: var(--reply-creator); }
+        .reply-card[data-role="reviewer"] { border-left-color: var(--success); background: var(--reply-reviewer); }
+        .reply-card[data-role="admin"] { border-left-color: var(--warning); background: var(--reply-admin); }
+        .reply-card .reply-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px; }
+        .reply-card .reply-author { font-size: 13px; font-weight: 600; }
+        .reply-card .reply-author.creator { color: var(--primary); }
+        .reply-card .reply-author.reviewer { color: var(--success); }
+        .reply-card .reply-author.admin { color: var(--warning); }
+        .reply-card .reply-time { font-size: 11px; color: var(--text-muted); }
+        .reply-card .reply-content { font-size: 14px; line-height: 1.8; white-space: pre-wrap; word-break: break-word; }
+        @media (max-width: 480px) { .reply-card .reply-content { font-size: 14px; } }
+
+        /* 回复框 */
+        .reply-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+        @media (max-width: 480px) { .reply-box { padding: 12px; } }
+        .reply-box h3 { font-size: 14px; margin-bottom: 8px; }
+        .reply-box textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 8px; font-family: inherit; resize: vertical; min-height: 100px; }
+        @media (max-width: 480px) {
+            .reply-box textarea { font-size: 16px; padding: 12px; min-height: 140px; }
+        }
+        .reply-box textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+        .reply-box .hint { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; line-height: 1.5; }
+        .no-permission { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
+        .flash-error { background: #fee2e2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #991b1b; margin-bottom: 16px; }
+
+        .btn { display: inline-block; padding: 10px 24px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:active { background: var(--primary-hover); transform: scale(0.98); }
+        @media (max-width: 480px) { .btn { width: 100%; text-align: center; font-size: 16px; padding: 12px; } }
+
+        /* 分页 */
+        .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 16px; flex-wrap: wrap; }
+        .pagination a, .pagination span { padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; text-decoration: none; color: var(--text-secondary); min-width: 40px; text-align: center; }
+        @media (max-width: 480px) { .pagination a, .pagination span { padding: 10px 12px; font-size: 15px; min-width: 44px; } }
+        .pagination .current { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .pagination a:hover { background: #f1f5f9; }
+
+        /* 空状态 */
+        .empty { text-align: center; color: var(--text-muted); padding: 30px; font-size: 14px; }
+
+        /* 管理操作 */
+        .admin-actions { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .btn-danger { display: inline-block; padding: 6px 14px; background: var(--danger); color: #fff; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-danger:active { background: #dc2626; transform: scale(0.98); }
+        @media (max-width: 480px) { .btn-danger { font-size: 14px; padding: 8px 16px; } }
+        .delete-confirm { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; }
+        .delete-confirm button { padding: 6px 14px; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; }
+        @media (max-width: 480px) { .delete-confirm button { font-size: 14px; padding: 8px 16px; } }
+        .delete-confirm .btn-confirm { background: var(--danger); color: #fff; }
+        .delete-confirm .btn-cancel { background: #e2e8f0; color: var(--text); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="breadcrumb"><a href="{{ url_for('index') }}">← 返回列表</a></div>
+
+        <!-- 帖子头部 -->
+        <div class="post-header">
+            <h1>{{ post.title }}</h1>
+            <div class="meta">
+                <span>{{ post.author_name }}</span>
+                <span>{{ post.created_at }}</span>
+                <span>💬 {{ total_replies }} 条回复</span>
+            </div>
+            {% if post.tags %}
+            <div class="tags">
+                {% for tag in post.tags.split() %}
+                {% if tag %}<span class="tag">{{ tag }}</span>{% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if post.content %}
+            <div class="content">{{ post.content }}</div>
+            {% endif %}
+        </div>
+
+        <!-- 管理员操作 -->
+        {% if identity and identity.role == 'admin' %}
+        <div class="admin-actions">
+            {% if show_delete_confirm %}
+            <div class="delete-confirm">
+                <span>⚠️ 确定要删除这个帖子吗？所有回复也会一并删除，不可恢复。</span>
+                <button class="btn-confirm" onclick="document.getElementById('deleteForm').submit()">确认删除</button>
+                <button class="btn-cancel" onclick="window.location='{{ url_for('view_post', post_id=post.id) }}'">取消</button>
+            </div>
+            <form id="deleteForm" method="POST" action="{{ url_for('delete_post_page', post_id=post.id) }}"></form>
+            {% else %}
+            <form method="GET" action="{{ url_for('view_post', post_id=post.id) }}" style="display:inline;">
+                <input type="hidden" name="confirm_delete" value="1">
+                <button type="submit" class="btn-danger">🗑 删除帖子</button>
+            </form>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- 回复区 -->
+        <div class="replies-section">
+            <div class="replies-header">💬 回复 ({{ total_replies }})</div>
+            {% if replies %}
+            {% for reply in replies %}
+            <div class="reply-card" data-role="{{ reply.role or 'admin' }}">
+                <div class="reply-meta">
+                    <span class="reply-author {{ reply.role or 'admin' }}">{{ reply.author_name }}</span>
+                    <span class="reply-time">{{ reply.created_at }}</span>
+                </div>
+                <div class="reply-content">{{ reply.content | e }}</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty">暂无回复，等待第一条消息...</div>
+            {% endif %}
+        </div>
+
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                    <span class="current">{{ p }}</span>
+                {% else %}
+                    <a href="?page={{ p }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- 回复框 -->
+        {% if identity %}
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for msg in messages %}
+                <div class="flash-error">{{ msg }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form class="reply-box" method="POST" action="{{ url_for('create_reply_page', post_id=post.id) }}">
+            <h3>💬 回复</h3>
+            <textarea name="content" placeholder="输入回复内容...&#10;&#10;提示：用 @昵称 可以指派任务，如 @{{ identity.name }}审核" required maxlength="5000" oninput="updateCharCount(this)"></textarea>
+            <div class="hint">你将以 <strong>{{ identity.name }}</strong> 的身份回复 · 用 @昵称 指派任务 · <span id="charCount">0</span>/5000 字</div>
+            <button type="submit" class="btn">发送回复</button>
+        </form>
+        <script>
+        function updateCharCount(el) {
+            document.getElementById('charCount').textContent = el.value.length;
+            if (el.value.length > 4800) {
+                document.getElementById('charCount').style.color = '#ef4444';
+            } else {
+                document.getElementById('charCount').style.color = '';
+            }
+        }
+        </script>
+        {% else %}
+        <div class="no-permission">
+            🤖 欢迎关注公众号[老杨讲理]，欢迎围观。
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

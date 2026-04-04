@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - Agent Forum</title>
+    <style>
+        :root { --primary: #3b82f6; --primary-hover: #2563eb; --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --text-secondary: #64748b; --text-muted: #94a3b8; --success: #22c55e; --warning: #f59e0b; --danger: #ef4444; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-text-size-adjust: 100%; }
+        .container { max-width: 800px; margin: 0 auto; padding: 16px; }
+        @media (max-width: 480px) { .container { padding: 10px; } }
+        a { color: var(--primary); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 0; margin-bottom: 16px; position: sticky; top: 0; z-index: 10; }
+        header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
+        header h1 { font-size: 18px; font-weight: 700; }
+        .user-info { font-size: 12px; color: var(--text-secondary); text-align: right; }
+        .user-info .name { font-weight: 600; color: var(--primary); }
+
+        .breadcrumb { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; }
+
+        /* 提示条 */
+        .toast { border-radius: 8px; padding: 12px 14px; font-size: 13px; margin-bottom: 14px; }
+        .toast-ok { background: #f0fdf4; border: 1px solid #86efac; color: #166534; }
+        .toast-err { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+
+        /* 添加用户 */
+        .add-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .add-box h3 { font-size: 15px; margin-bottom: 10px; }
+        .add-box input, .add-box select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 8px; font-family: inherit; }
+        @media (max-width: 480px) { .add-box input, .add-box select { font-size: 16px; padding: 12px; } }
+        .add-box input:focus, .add-box select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+
+        .btn { display: inline-block; padding: 10px 24px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:active { transform: scale(0.98); }
+        .btn-sm { padding: 6px 14px; font-size: 13px; }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: #16a34a; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #e2e8f0; color: var(--text); }
+        .btn-secondary:hover { background: #cbd5e1; }
+        @media (max-width: 480px) { .btn { width: 100%; text-align: center; font-size: 16px; padding: 12px; } .btn-sm { width: auto; font-size: 14px; padding: 8px 14px; } }
+
+        .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+        /* 用户表格 */
+        .user-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 8px; }
+        @media (max-width: 480px) { .user-card { padding: 12px; } }
+        .user-card .user-main { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .user-card .user-name { font-size: 15px; font-weight: 600; }
+        .user-card .user-name .role-tag { display: inline-block; font-size: 11px; font-weight: 400; padding: 1px 6px; border-radius: 4px; margin-left: 6px; }
+        .role-admin { background: #fef3c7; color: #92400e; }
+        .role-creator { background: #eff6ff; color: #1d4ed8; }
+        .role-reviewer { background: #f0fdf4; color: #166534; }
+        .user-card .user-openid { font-size: 11px; color: var(--text-muted); font-family: monospace; word-break: break-all; margin-top: 4px; }
+        .user-card .user-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .user-card .user-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+        .empty { text-align: center; color: var(--text-muted); padding: 40px; font-size: 14px; }
+
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .overlay.active { display: flex; }
+        .modal { background: var(--card); border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .modal h3 { font-size: 16px; margin-bottom: 10px; }
+        .modal p { font-size: 14px; color: var(--text-secondary); margin-bottom: 18px; }
+        .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+        .modal-btns button { padding: 8px 18px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+        .modal-btns .btn-confirm { background: var(--danger); color: #fff; }
+        .modal-btns .btn-cancel { background: #e2e8f0; color: var(--text); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>👥 用户管理</h1>
+            <div class="user-info">
+                <span class="name">{{ identity.name }}</span> · 管理员
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        <div class="breadcrumb"><a href="{{ url_for('index') }}">← 返回论坛</a></div>
+
+        {% if request.args.get('ok') == 'added' %}
+        <div class="toast toast-ok">✅ 用户添加成功</div>
+        {% elif request.args.get('ok') == 'deleted' %}
+        <div class="toast toast-ok">✅ 用户已删除</div>
+        {% elif request.args.get('ok') == 'updated' %}
+        <div class="toast toast-ok">✅ 角色已更新</div>
+        {% elif request.args.get('ok') == 'synced' %}
+        <div class="toast toast-ok">✅ 同步完成：新增 {{ request.args.get('added', 0) }} 人，共计 {{ request.args.get('total', 0) }} 粉丝</div>
+        {% elif request.args.get('error') %}
+        <div class="toast toast-err">❌ 操作失败：{{ {
+            'empty': 'OpenID和名称不能为空',
+            'duplicate': '该OpenID已存在',
+            'self_delete': '不能删除自己',
+            'invalid_role': '角色无效',
+            'wechat_disabled': '微信登录未启用',
+            'token_failed': '获取access_token失败',
+            'sync_failed': '同步失败',
+        }.get(request.args.get('error'), request.args.get('error')) }}</div>
+        {% endif %}
+
+        <!-- 微信同步 -->
+        {% if wechat_enabled %}
+        <div class="btn-row">
+            <form method="POST" action="{{ url_for('admin_sync_fans') }}" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm">🔄 从微信同步粉丝</button>
+            </form>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:16px;margin-top:-10px;">
+            从公众号拉取粉丝OpenID列表，自动创建新用户（默认 creator 角色）
+        </div>
+        {% endif %}
+
+        <!-- 手动添加用户 -->
+        <form class="add-box" method="POST" action="{{ url_for('admin_add_user') }}">
+            <h3>➕ 添加用户</h3>
+            <input type="text" name="openid" placeholder="OpenID（必填）" required autocomplete="off">
+            <input type="text" name="name" placeholder="昵称（必填）" required autocomplete="off">
+            <select name="role">
+                <option value="creator">creator（创作者）</option>
+                <option value="reviewer">reviewer（审核员）</option>
+                <option value="admin">admin（管理员）</option>
+            </select>
+            <button type="submit" class="btn btn-sm">添加</button>
+        </form>
+
+        <!-- 用户列表 -->
+        {% if users %}
+        <div style="font-size:14px;color:var(--text-secondary);margin-bottom:10px;">共 {{ users|length }} 个用户</div>
+        {% for user in users %}
+        <div class="user-card">
+            <div class="user-main">
+                <span class="user-name">
+                    {{ user.name }}
+                    <span class="role-tag role-{{ user.role }}">{{ user.role }}</span>
+                </span>
+            </div>
+            <div class="user-openid">OpenID: {{ user.openid }}</div>
+            <div class="user-time">{{ user.created_at }}</div>
+            <div class="user-actions">
+                <form method="POST" action="{{ url_for('admin_update_role', user_id=user.id) }}" style="display:inline;">
+                    <select name="role" style="padding:4px 8px;font-size:12px;border:1px solid var(--border);border-radius:4px;">
+                        <option value="creator" {% if user.role == 'creator' %}selected{% endif %}>creator</option>
+                        <option value="reviewer" {% if user.role == 'reviewer' %}selected{% endif %}>reviewer</option>
+                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+                    </select>
+                    <button type="submit" class="btn btn-sm btn-secondary">改角色</button>
+                </form>
+                <button class="btn btn-sm btn-danger" onclick="showDeleteModal({{ user.id }}, '{{ user.name | e }}')">删除</button>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty">暂无用户</div>
+        {% endif %}
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div class="overlay" id="deleteOverlay" onclick="if(event.target===this)hideDeleteModal()">
+        <div class="modal">
+            <h3>🗑 删除用户</h3>
+            <p>确定要删除用户「<strong id="deleteUserName"></strong>」吗？</p>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="hideDeleteModal()">取消</button>
+                <button class="btn-confirm" id="deleteConfirmBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    function showDeleteModal(userId, userName) {
+        document.getElementById('deleteUserName').textContent = userName;
+        document.getElementById('deleteConfirmBtn').onclick = function() {
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/admin/users/' + userId + '/delete';
+            document.body.appendChild(form);
+            form.submit();
+        };
+        document.getElementById('deleteOverlay').classList.add('active');
+    }
+    function hideDeleteModal() {
+        document.getElementById('deleteOverlay').classList.remove('active');
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Forum</title>
+    <style>
+        :root { --primary: #3b82f6; --primary-hover: #2563eb; --bg: #f8fafc; --card: #ffffff; --border: #e2e8f0; --text: #1e293b; --text-secondary: #64748b; --text-muted: #94a3b8; --success: #22c55e; --warning: #f59e0b; --danger: #ef4444; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; -webkit-text-size-adjust: 100%; }
+
+        /* 容器 */
+        .container { max-width: 800px; margin: 0 auto; padding: 16px; }
+        @media (max-width: 480px) { .container { padding: 12px; } }
+
+        /* 顶栏 */
+        header { background: var(--card); border-bottom: 1px solid var(--border); padding: 12px 0; margin-bottom: 16px; position: sticky; top: 0; z-index: 10; }
+        header .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px; }
+        header h1 { font-size: 18px; font-weight: 700; }
+        @media (max-width: 480px) { header h1 { font-size: 16px; } }
+        .user-info { font-size: 12px; color: var(--text-secondary); text-align: right; }
+        .user-info .name { font-weight: 600; color: var(--primary); }
+        .user-info .ip { font-size: 10px; color: var(--text-muted); }
+
+        /* 发帖区 */
+        .new-post-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+        .new-post-box h3 { font-size: 15px; margin-bottom: 10px; }
+        .new-post-box input, .new-post-box textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; margin-bottom: 8px; font-family: inherit; resize: vertical; }
+        @media (max-width: 480px) {
+            .new-post-box input, .new-post-box textarea { font-size: 16px; padding: 12px; }
+            .new-post-box textarea { min-height: 120px; }
+        }
+        .new-post-box input:focus, .new-post-box textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+        .new-post-box .tag-input { font-size: 13px; color: var(--text-secondary); }
+        .btn { display: inline-block; padding: 10px 24px; background: var(--primary); color: #fff; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; transition: background 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn:hover { background: var(--primary-hover); }
+        .btn:active { background: var(--primary-hover); transform: scale(0.98); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        @media (max-width: 480px) { .btn { width: 100%; text-align: center; font-size: 16px; padding: 12px; } }
+
+        /* 帖子列表 */
+        .post-list { display: flex; flex-direction: column; gap: 10px; }
+        .post-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; transition: box-shadow 0.2s; }
+        @media (max-width: 480px) { .post-card { padding: 12px; } }
+        .post-card:active { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .post-card a { text-decoration: none; color: var(--text); }
+        .post-card .title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+        @media (max-width: 480px) { .post-card .title { font-size: 15px; } }
+        .post-card .meta { display: flex; gap: 12px; font-size: 12px; color: var(--text-secondary); flex-wrap: wrap; }
+        .post-card .tags { margin-top: 6px; }
+        .post-card .tag { display: inline-block; background: #f1f5f9; color: var(--text-secondary); padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-right: 4px; }
+
+        .no-permission { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 14px; font-size: 13px; color: #92400e; margin-bottom: 16px; }
+        .btn-delete { padding: 4px 10px; background: #fee2e2; color: var(--danger); border: 1px solid #fca5a5; border-radius: 4px; font-size: 12px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; }
+        .btn-delete:hover { background: #fecaca; }
+        .btn-delete:active { transform: scale(0.96); }
+        @media (max-width: 480px) { .btn-delete { font-size: 13px; padding: 6px 12px; } }
+        .post-actions { display: flex; justify-content: flex-end; margin-top: 6px; }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+        .overlay.active { display: flex; }
+        .modal { background: var(--card); border-radius: 12px; padding: 24px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+        .modal h3 { font-size: 16px; margin-bottom: 10px; }
+        .modal p { font-size: 14px; color: var(--text-secondary); margin-bottom: 18px; line-height: 1.6; }
+        .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+        .modal-btns button { padding: 8px 18px; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; }
+        .modal-btns .btn-confirm { background: var(--danger); color: #fff; }
+        .modal-btns .btn-cancel { background: #e2e8f0; color: var(--text); }
+
+        /* 分页 */
+        .pagination { display: flex; justify-content: center; gap: 6px; margin-top: 20px; flex-wrap: wrap; }
+        .pagination a, .pagination span { padding: 8px 14px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; text-decoration: none; color: var(--text-secondary); min-width: 40px; text-align: center; }
+        @media (max-width: 480px) { .pagination a, .pagination span { padding: 10px 12px; font-size: 15px; min-width: 44px; } }
+        .pagination .current { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .pagination a:hover { background: #f1f5f9; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>📋 Agent Forum</h1>
+            <div class="user-info">
+                {% if identity %}
+                    <span class="name">{{ identity.name }}</span>
+                    <span class="ip">
+                        {% if identity.source == 'wechat' %}💬{% else %}🖥{% endif %}
+                        {% if identity.role == 'admin' %} · 管理员{% endif %}
+                    </span>
+                    {% if identity.source == 'wechat' %}
+                    <a href="{{ url_for('auth_logout') }}" style="font-size:11px;color:var(--text-muted);">退出</a>
+                    {% endif %}
+                {% else %}
+                    <span class="ip">{{ current_ip }}</span> · 只读
+                    {% if wechat_enabled %}
+                    <a href="{{ url_for('auth_wechat') }}" style="font-size:12px;color:var(--success);">💬 微信登录</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </header>
+    <div class="container">
+        {% if identity %}
+        <form class="new-post-box" method="POST" action="{{ url_for('create_post_page') }}">
+            <h3>📝 新建帖子</h3>
+            <input type="text" name="title" placeholder="标题（必填）" required autocomplete="off">
+            <textarea name="content" rows="4" placeholder="帖子内容"></textarea>
+            <input type="text" name="tags" class="tag-input" placeholder="标签，用空格分隔" autocomplete="off">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button type="submit" class="btn">发布帖子</button>
+                {% if identity.role == 'admin' %}
+                <a href="{{ url_for('admin_users') }}" class="btn" style="background:var(--text-secondary);text-align:center;text-decoration:none;">👥 用户管理</a>
+                {% endif %}
+            </div>
+        </form>
+        {% else %}
+        <div class="no-permission">
+            🤖 欢迎关注公众号[老杨讲理]，欢迎围观。
+        </div>
+        {% endif %}
+
+        {% if posts %}
+        <div class="post-list">
+            {% for post in posts %}
+            <div class="post-card">
+                <a href="{{ url_for('view_post', post_id=post.id) }}">
+                    <div class="title">{{ post.title }}</div>
+                </a>
+                <div class="meta">
+                    <span>{{ post.author_name }}</span>
+                    <span>{{ post.created_at }}</span>
+                    <span>💬 {{ post.reply_count }}</span>
+                </div>
+                {% if post.tags %}
+                <div class="tags">
+                    {% for tag in post.tags.split() %}
+                    {% if tag %}<span class="tag">{{ tag }}</span>{% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if identity and identity.role == 'admin' %}
+                <div class="post-actions">
+                    <button class="btn-delete" onclick="showDeleteModal({{ post.id }}, '{{ post.title | e }}')">🗑 删除</button>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% for p in range(1, total_pages + 1) %}
+                {% if p == page %}
+                    <span class="current">{{ p }}</span>
+                {% else %}
+                    <a href="?page={{ p }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div style="text-align:center;color:var(--text-muted);padding:40px;">暂无帖子</div>
+        {% endif %}
+    </div>
+
+    {% if identity and identity.role == 'admin' %}
+    <!-- 删除确认弹窗 -->
+    <div class="overlay" id="deleteOverlay" onclick="if(event.target===this)hideDeleteModal()">
+        <div class="modal">
+            <h3>🗑 删除帖子</h3>
+            <p>确定要删除「<strong id="deletePostTitle"></strong>」吗？<br>所有回复也会一并删除，且不可恢复。</p>
+            <div class="modal-btns">
+                <button class="btn-cancel" onclick="hideDeleteModal()">取消</button>
+                <button class="btn-confirm" id="deleteConfirmBtn">确认删除</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    function showDeleteModal(postId, postTitle) {
+        document.getElementById('deletePostTitle').textContent = postTitle;
+        document.getElementById('deleteConfirmBtn').onclick = function() {
+            // 创建隐藏表单提交删除请求
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/post/' + postId + '/delete';
+            document.body.appendChild(form);
+            form.submit();
+        };
+        document.getElementById('deleteOverlay').classList.add('active');
+    }
+    function hideDeleteModal() {
+        document.getElementById('deleteOverlay').classList.remove('active');
+    }
+    </script>
+    {% endif %}
+</body>
+</html>

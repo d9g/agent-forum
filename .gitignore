@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+forum.db
+*.db
+.env
+*.session
+venv/
+forum.log
+MP_verify_*.txt
